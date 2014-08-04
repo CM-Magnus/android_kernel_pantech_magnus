@@ -1,5 +1,5 @@
 
-/* Copyright (c) 2008-2012, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2008-2013, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -24,6 +24,7 @@
 #include <linux/semaphore.h>
 #include <linux/uaccess.h>
 #include <linux/clk.h>
+#include <linux/iopoll.h>
 #include <linux/platform_device.h>
 #include <linux/iopoll.h>
 
@@ -1297,7 +1298,6 @@ int mipi_dsi_cmds_rx(struct msm_fb_data_type *mfd,
 	/* transmit read comamnd to client */
 	mipi_dsi_cmd_dma_tx(tp);
 
-	mipi_dsi_disable_irq(DSI_CMD_TERM);
 	/*
 	 * once cmd_dma_done interrupt received,
 	 * return data from client is ready and stored
@@ -1412,7 +1412,6 @@ int mipi_dsi_cmds_rx_new(struct dsi_buf *tp, struct dsi_buf *rp,
 	/* transmit read comamnd to client */
 	mipi_dsi_cmd_dma_tx(tp);
 
-	mipi_dsi_disable_irq(DSI_CMD_TERM);
 	/*
 	 * once cmd_dma_done interrupt received,
 	 * return data from client is ready and stored
@@ -1546,17 +1545,21 @@ int mipi_dsi_cmd_dma_rx(struct dsi_buf *rp, int rlen)
 	return rlen;
 }
 
-static void mipi_dsi_video_wait_to_mdp_busy(void)
+static void mipi_dsi_wait_for_video_eng_busy(void)
 {
 	u32 status;
+	int sleep_us = 4000;
 
 	/*
 	 * if video mode engine was not busy (in BLLP)
 	 * wait to pass BLLP
 	 */
-	status = MIPI_INP(MIPI_DSI_BASE + 0x0004); /* DSI_STATUS */
-	if (!(status & 0x08)) /* VIDEO_MODE_ENGINE_BUSY */
-		usleep(4000);
+
+	/* check for VIDEO_MODE_ENGINE_BUSY */
+	readl_poll((MIPI_DSI_BASE + 0x0004), /* DSI_STATUS */
+				status,
+				(status & 0x08),
+				sleep_us);
 }
 
 void mipi_dsi_cmd_mdp_busy(void)
@@ -1653,7 +1656,7 @@ void mipi_dsi_cmdlist_commit(int from_mdp)
 		/* video mode, make sure dsi_cmd_mdp is busy
 		 * so dcs command will be txed at start of BLLP
 		 */
-		mipi_dsi_video_wait_to_mdp_busy();
+		mipi_dsi_wait_for_video_eng_busy();
 	} else {
 		/* command mode */
 		if (!from_mdp) { /* cmdlist_put */

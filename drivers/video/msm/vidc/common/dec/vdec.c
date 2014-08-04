@@ -1,4 +1,4 @@
-/* Copyright (c) 2010-2012, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2010-2013, Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -334,9 +334,9 @@ static void vid_dec_output_frame_done(struct video_client_ctx *client_ctx,
 		output_frame->aspect_ratio_info.aspect_ratio =
 			vcd_frame_data->aspect_ratio_info.aspect_ratio;
 		output_frame->aspect_ratio_info.par_width =
-			vcd_frame_data->aspect_ratio_info.extended_par_width;
+			vcd_frame_data->aspect_ratio_info.par_width;
 		output_frame->aspect_ratio_info.par_height =
-			vcd_frame_data->aspect_ratio_info.extended_par_height;
+			vcd_frame_data->aspect_ratio_info.par_height;
 		vdec_msg->vdec_msg_info.msgdatasize =
 		    sizeof(struct vdec_output_frameinfo);
 	} else {
@@ -2079,10 +2079,6 @@ static u32 vid_dec_close_client(struct video_client_ctx *client_ctx)
 	mutex_unlock(&client_ctx->msg_queue_lock);
 	vcd_status = vcd_close(client_ctx->vcd_handle);
 
-	if (vcd_status) {
-		mutex_unlock(&vid_dec_device_p->lock);
-		return false;
-	}
 	client_ctx->user_ion_client = NULL;
 	memset((void *)client_ctx, 0, sizeof(struct video_client_ctx));
 	vid_dec_device_p->num_clients--;
@@ -2119,7 +2115,7 @@ int vid_dec_open_client(struct video_client_ctx **vid_clnt_ctx, int flags)
 	}
 
 	client_index = vid_dec_get_empty_client_index();
-	if (client_index == -1) {
+	if (client_index < 0) {
 		ERR("%s() : No free clients client_index == -1\n", __func__);
 		rc = -ENOMEM;
 		goto client_failure;

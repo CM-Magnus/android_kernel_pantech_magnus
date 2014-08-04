@@ -133,7 +133,25 @@ static int mipi_dsi_off(struct platform_device *pdev)
 	mdp_bus_scale_update_request(0);
 #endif
 
+<<<<<<< HEAD
 	spin_lock_bh(&dsi_clk_lock);
+=======
+#if defined(CONFIG_MACH_MSM8960_STARQ)
+	mipi  = &mfd->panel_info.mipi;
+
+	if (mipi->force_clk_lane_hs) {
+		u32 tmp;
+
+		tmp = MIPI_INP(MIPI_DSI_BASE + 0xA8);
+		tmp &= ~(1<<28);
+		MIPI_OUTP(MIPI_DSI_BASE + 0xA8, tmp);
+		wmb();
+#if !defined(FEATURE_AARM_RELEASE_MODE) //not user mode
+		printk("[MIPI: shinbrad Low speed Clk Set(Off Sequence) .................................................]\n");
+#endif
+	}
+#endif
+>>>>>>> 91697b8... Video: msm: bulk update from A8064AAAAANLYA1213507
 	mipi_dsi_clk_disable();
 
 	/* disbale dsi engine */
@@ -142,7 +160,6 @@ static int mipi_dsi_off(struct platform_device *pdev)
 	mipi_dsi_phy_ctrl(0);
 
 	mipi_dsi_ahb_ctrl(0);
-	spin_unlock_bh(&dsi_clk_lock);
 
 	mipi_dsi_unprepare_clocks();
 	if (mipi_dsi_pdata && mipi_dsi_pdata->dsi_power_save)
@@ -510,9 +527,6 @@ static int mipi_dsi_probe(struct platform_device *pdev)
 	if (pdev_list_cnt >= MSM_FB_MAX_DEV_LIST)
 		return -ENOMEM;
 
-	if (!mfd->cont_splash_done)
-		cont_splash_clk_ctrl(1);
-
 	mdp_dev = platform_device_alloc("mdp", pdev->id);
 	if (!mdp_dev)
 		return -ENOMEM;
@@ -631,8 +645,10 @@ static int mipi_dsi_probe(struct platform_device *pdev)
 	if (rc)
 		goto mipi_dsi_probe_err;
 
-	if ((dsi_pclk_rate < 3300000) || (dsi_pclk_rate > 103300000))
+	if ((dsi_pclk_rate < 3300000) || (dsi_pclk_rate > 223000000)) {
+		pr_err("%s: Pixel clock not supported\n", __func__);
 		dsi_pclk_rate = 35000000;
+	}
 	mipi->dsi_pclk_rate = dsi_pclk_rate;
 
 	/*
@@ -648,6 +664,9 @@ static int mipi_dsi_probe(struct platform_device *pdev)
 		goto mipi_dsi_probe_err;
 
 	pdev_list[pdev_list_cnt++] = pdev;
+
+	if (!mfd->cont_splash_done)
+		cont_splash_clk_ctrl(1);
 
 return 0;
 

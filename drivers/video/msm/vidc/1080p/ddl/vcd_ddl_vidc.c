@@ -1,4 +1,4 @@
-/* Copyright (c) 2010-2012, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2010-2013, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -279,6 +279,12 @@ void ddl_vidc_decode_init_codec(struct ddl_client_context *ddl)
 		vidc_sm_set_mpeg4_profile_override(
 			&ddl->shared_mem[ddl->command_channel],
 			VIDC_SM_PROFILE_INFO_ASP);
+	if (VCD_CODEC_MPEG2 == decoder->codec.codec)
+		vidc_sm_set_mp2datadumpbuffer(
+			&ddl->shared_mem[ddl->command_channel],
+			DDL_ADDR_OFFSET(ddl_context->dram_base_a,
+			ddl->codec_data.decoder.hw_bufs.extnuserdata),
+			DDL_KILO_BYTE(2));
 	if (VCD_CODEC_H264 == decoder->codec.codec)
 		vidc_sm_set_decoder_sei_enable(
 			&ddl->shared_mem[ddl->command_channel],
@@ -408,7 +414,7 @@ static void ddl_vidc_encode_set_profile_level(
 		encode_profile = VIDC_1080P_PROFILE_MPEG4_ADV_SIMPLE;
 	break;
 	case VCD_PROFILE_H264_BASELINE:
-		encode_profile = VIDC_1080P_PROFILE_H264_BASELINE;
+		encode_profile = VIDC_1080P_PROFILE_H264_CONSTRAINED_BASELINE;
 	break;
 	case VCD_PROFILE_H264_MAIN:
 		encode_profile = VIDC_1080P_PROFILE_H264_MAIN;

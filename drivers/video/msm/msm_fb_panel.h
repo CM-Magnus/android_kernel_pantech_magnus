@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2012, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2008-2013, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -71,7 +71,6 @@ struct lcd_panel_info {
 	__u32 hw_vsync_mode;
 	__u32 vsync_notifier_period;
 	__u32 blt_ctrl;
-	__u32 blt_mode;
 	__u32 rev;
 };
 
@@ -175,7 +174,7 @@ struct msm_panel_info {
 	__u32 frame_count;
 	__u32 is_3d_panel;
 	__u32 frame_rate;
-
+	__u32 frame_interval;
 
 	struct mddi_panel_info mddi;
 	struct lcd_panel_info lcd;
@@ -206,18 +205,6 @@ struct msm_fb_panel_data {
 	int (*power_ctrl) (boolean enable);
 	struct platform_device *next;
 	int (*clk_func) (int enable);
-};
-
-enum {
-	MDP4_OVERLAY_BLT_SWITCH_TG_OFF,
-	MDP4_OVERLAY_BLT_SWITCH_TG_ON,
-	MDP4_OVERLAY_BLT_SWITCH_POLL
-};
-
-enum {
-	MDP4_OVERLAY_MODE_BLT_CTRL,
-	MDP4_OVERLAY_MODE_BLT_ALWAYS_ON,
-	MDP4_OVERLAY_MODE_BLT_ALWAYS_OFF
 };
 
 /*===========================================================================

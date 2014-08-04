@@ -1,4 +1,4 @@
-/* Copyright (c) 2010-2012, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2010-2013, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -879,9 +879,6 @@ static void hdmi_msm_send_event(boolean on)
 		kobject_uevent(external_common_state->uevent_kobj,
 			KOBJ_OFFLINE);
 	}
-
-	if (!completion_done(&hdmi_msm_state->hpd_event_processed))
-		complete(&hdmi_msm_state->hpd_event_processed);
 }
 
 static void hdmi_msm_hpd_state_work(struct work_struct *work)
@@ -4399,8 +4396,7 @@ error1:
 
 static int hdmi_msm_power_ctrl(boolean enable)
 {
-	int rc   = 0;
-	int time = 0;
+	int rc = 0;
 
 	if (enable) {
 		/*
@@ -4411,10 +4407,18 @@ static int hdmi_msm_power_ctrl(boolean enable)
 			external_common_state->hpd_feature_on) {
 			DEV_DBG("%s: Turning HPD ciruitry on\n", __func__);
 
+			if (external_common_state->pre_suspend_hpd_state) {
+				external_common_state->pre_suspend_hpd_state =
+					 false;
+
+				hdmi_msm_send_event(HPD_EVENT_OFFLINE);
+			}
+
 			rc = hdmi_msm_hpd_on();
 			if (rc) {
 				DEV_ERR("%s: HPD ON FAILED\n", __func__);
 				return rc;
+<<<<<<< HEAD
 			}
 
 			/* Wait for HPD initialization to complete */
@@ -4425,10 +4429,16 @@ static int hdmi_msm_power_ctrl(boolean enable)
 				DEV_DBG("%s: cable not detected\n", __func__);
 				queue_work(hdmi_work_queue,
 				    &hdmi_msm_state->hpd_state_work);
+=======
+>>>>>>> 91697b8... Video: msm: bulk update from A8064AAAAANLYA1213507
 			}
 		}
 	} else {
 		DEV_DBG("%s: Turning HPD ciruitry off\n", __func__);
+
+		external_common_state->pre_suspend_hpd_state =
+			external_common_state->hpd_state;
+
 		hdmi_msm_hpd_off();
 	}
 
@@ -4608,6 +4618,11 @@ error:
 	return ret;
 }
 
+bool mhl_is_enabled(void)
+{
+	return hdmi_msm_state->is_mhl_enabled;
+}
+
 void hdmi_msm_config_hdcp_feature(void)
 {
 	if (hdcp_feature_on && hdmi_msm_has_hdcp()) {
@@ -4630,10 +4645,26 @@ void hdmi_msm_config_hdcp_feature(void)
 			hdmi_msm_state->hdcp_enable ? "Enabled" : "Disabled");
 }
 
+static void hdmi_msm_update_panel_info(struct msm_fb_data_type *mfd)
+{
+	if (!mfd)
+		return;
+
+	if (hdmi_common_get_video_format_from_drv_data(mfd))
+		hdmi_common_init_panel_info(&mfd->panel_info);
+}
+
+static bool hdmi_msm_cable_connected(void)
+{
+	return hdmi_msm_state->hpd_initialized &&
+			external_common_state->hpd_state;
+}
+
 static int __devinit hdmi_msm_probe(struct platform_device *pdev)
 {
 	int rc;
 	struct platform_device *fb_dev;
+	struct msm_fb_data_type *mfd = NULL;
 
 	if (!hdmi_msm_state) {
 		pr_err("%s: hdmi_msm_state is NULL\n", __func__);
@@ -4756,6 +4787,10 @@ static int __devinit hdmi_msm_probe(struct platform_device *pdev)
 	} else
 		DEV_ERR("Init FAILED: failed to add fb device\n");
 
+	mfd = platform_get_drvdata(fb_dev);
+	mfd->update_panel_info = hdmi_msm_update_panel_info;
+	mfd->is_panel_ready = hdmi_msm_cable_connected;
+
 	if (hdmi_prim_display) {
 		rc = hdmi_msm_hpd_on();
 		if (rc)
@@ -4783,6 +4818,12 @@ static int __devinit hdmi_msm_probe(struct platform_device *pdev)
 		goto error;
 	}
 
+	/* Set the default video resolution for MHL-enabled display */
+	if (hdmi_msm_state->is_mhl_enabled) {
+		DEV_DBG("MHL Enabled. Restricting default video resolution\n");
+		external_common_state->video_resolution =
+			HDMI_VFRMT_1920x1080p30_16_9;
+	}
 	return 0;
 
 error:
@@ -4859,8 +4900,11 @@ static int hdmi_msm_hpd_feature(int on)
 		rc = hdmi_msm_hpd_on();
 	} else {
 		if (external_common_state->hpd_state) {
+<<<<<<< HEAD
 			external_common_state->hpd_state = 0;
 
+=======
+>>>>>>> 91697b8... Video: msm: bulk update from A8064AAAAANLYA1213507
 			/* Send offline event to switch OFF HDMI and HAL FD */
 			hdmi_msm_send_event(HPD_EVENT_OFFLINE);
 
@@ -4868,6 +4912,8 @@ static int hdmi_msm_hpd_feature(int on)
 			INIT_COMPLETION(hdmi_msm_state->hpd_event_processed);
 			wait_for_completion_interruptible_timeout(
 				&hdmi_msm_state->hpd_event_processed, HZ);
+
+			external_common_state->hpd_state = 0;
 		}
 
 		hdmi_msm_hpd_off();

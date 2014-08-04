@@ -1454,7 +1454,11 @@ static void add_supported_video_format(
 		video_format, video_format_2string(video_format),
 		supported ? "Supported" : "Not-Supported");
 
+<<<<<<< HEAD
 	if (mhl_is_connected()) {
+=======
+	if (mhl_is_enabled()) {
+>>>>>>> 91697b8... Video: msm: bulk update from A8064AAAAANLYA1213507
 		const struct hdmi_disp_mode_timing_type *mhl_timing =
 			hdmi_mhl_get_supported_mode(video_format);
 		mhl_supported = mhl_timing != NULL;
@@ -1541,7 +1545,8 @@ static void hdmi_edid_get_display_vsd_3d_mode(const uint8 *data_buf,
 	struct hdmi_disp_mode_list_type *disp_mode_list,
 	uint32 num_og_cea_blocks)
 {
-	uint8 len, offset, present_multi_3d, hdmi_vic_len, hdmi_3d_len;
+	uint8 len, offset, present_multi_3d, hdmi_vic_len;
+	int hdmi_3d_len;
 	uint16 structure_all, structure_mask;
 	const uint8 *vsd = num_og_cea_blocks ?
 		hdmi_edid_find_block(data_buf+0x80, DBC_START_OFFSET,
@@ -2017,14 +2022,13 @@ error:
 	external_common_state->disp_mode_list.num_of_elements = 1;
 	external_common_state->disp_mode_list.disp_mode_list[0] =
 		external_common_state->video_resolution;
-	external_common_state->default_res_supported = true;
 	return status;
 }
 EXPORT_SYMBOL(hdmi_common_read_edid);
 
 bool hdmi_common_get_video_format_from_drv_data(struct msm_fb_data_type *mfd)
 {
-	uint32 format = HDMI_VFRMT_1920x1080p60_16_9;
+	uint32 format =  external_common_state->video_resolution;
 	struct fb_var_screeninfo *var = &mfd->fbi->var;
 	bool changed = TRUE;
 
