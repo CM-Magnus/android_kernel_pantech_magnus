@@ -121,6 +121,7 @@ if MACH_MSM8960_MAGNUS
 config DEFINE_LIST_MAGNUS
 	bool
 	default y
+    select CRT_OFF_ANIMATION
 	select PANTECH_ATNT
 #	select PANTECH_SDCARD
 	select PANTECH_ERR_CRASH_LOGGING
@@ -250,6 +251,10 @@ config ANDROID_PANTECH_USB_ABNORMAL_CHARGER_INFO
      Support Pantech USB
 
 # LCD 
+
+config CRT_OFF_ANIMATION
+       bool
+
 config F_SKYDISP_QBUG_FIX_BACKLIGHT
         bool 
 
